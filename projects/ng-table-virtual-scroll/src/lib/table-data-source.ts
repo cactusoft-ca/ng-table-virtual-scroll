@@ -21,6 +21,7 @@ export type TVSPaginationEndpoint<T> = (pageable: TVSPageRequest) => Observable<
 export type TVSPaginationSettings<T> = {
   endpoint: TVSPaginationEndpoint<T>;
   pageSize: number;
+  emptyDataInitializer?: (index: number, totalElements: number) => T | undefined;
 }
 
 export interface TVSDataSource<T> {
@@ -64,7 +65,7 @@ export class CdkTableVirtualScrollDataSource<T> extends DataSource<T> implements
       const pageSettings: TVSPaginationSettings<T> = data;
       const data$ = this._collectionViewer.pipe(
         switchMap(collectionViewer => {
-          let dataCache = [];
+          let cache: Array<T> = [];
           let cachedPages = new Set<number>();
           return collectionViewer.viewChange.pipe(
 
@@ -76,7 +77,7 @@ export class CdkTableVirtualScrollDataSource<T> extends DataSource<T> implements
               // Get all the required page for the specified range
               for (let page = startPage; page <= endPage; page++) {
                 if (cachedPages.has(page)) {
-                  obs.push(of(dataCache));
+                  obs.push(of(cache));
                 } else {
                   const newData = pageSettings.endpoint({
                     size: pageSettings.pageSize,
@@ -84,18 +85,21 @@ export class CdkTableVirtualScrollDataSource<T> extends DataSource<T> implements
                   }).pipe(
                     tap(tvsPage => {
                       // Compute the total pages
-                      if (dataCache.length !== tvsPage.totalElements) {
+                      if (cache.length !== tvsPage.totalElements) {
+                        // If the total elements changes, we need to clear the cache
                         cachedPages = new Set<number>();
-                        dataCache = new Array(tvsPage.totalElements);
+                        cache = pageSettings.emptyDataInitializer != null
+                                  ? Array.from(Array(tvsPage.totalElements), (_, idx) =>  pageSettings.emptyDataInitializer(idx, tvsPage.totalElements))
+                                  : Array(tvsPage.totalElements);
                       }
 
                       // Replace the cache content
-                      dataCache.splice(startPage * pageSettings.pageSize, tvsPage.content.length, ...tvsPage.content);
+                      cache.splice(startPage * pageSettings.pageSize, tvsPage.content.length, ...tvsPage.content);
 
                       // Add the page to the cache
                       cachedPages.add(page);
                     }),
-                    map(() => dataCache)
+                    map(() => cache)
                   );
 
                   obs.push(newData)
