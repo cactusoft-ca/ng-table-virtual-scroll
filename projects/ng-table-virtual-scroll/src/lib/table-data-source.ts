@@ -1,10 +1,20 @@
-import { BehaviorSubject, combineLatest, concat, merge, Observable, of, ReplaySubject, Subject, Subscription } from 'rxjs';
-import { map, switchMap, tap } from 'rxjs/operators';
-import { MatTableDataSource } from '@angular/material/table';
-import { MatSort, Sort } from '@angular/material/sort';
-import { MatPaginator, PageEvent } from '@angular/material/paginator';
 import { CollectionViewer, DataSource } from '@angular/cdk/collections';
-
+import { MatPaginator, PageEvent } from '@angular/material/paginator';
+import { MatSort, Sort } from '@angular/material/sort';
+import { MatTableDataSource } from '@angular/material/table';
+import {
+  BehaviorSubject,
+  combineLatest,
+  generate,
+  merge,
+  Observable,
+  of,
+  ReplaySubject,
+  Subject,
+  Subscription,
+} from 'rxjs';
+import { GenerateBaseOptions } from 'rxjs/internal/observable/generate';
+import { map, switchMap, tap } from 'rxjs/operators';
 
 export interface TVSPageRequest {
   page: number;
@@ -12,8 +22,8 @@ export interface TVSPageRequest {
 }
 
 export interface TVSPage<T> {
-  content: T[]
-  totalElements: number
+  content: T[];
+  totalElements: number;
 }
 
 export type TVSPaginationEndpoint<T> = (pageable: TVSPageRequest) => Observable<TVSPage<T>>;
@@ -22,7 +32,7 @@ export type TVSPaginationSettings<T> = {
   endpoint: TVSPaginationEndpoint<T>;
   pageSize: number;
   emptyDataInitializer?: (index: number, totalElements: number) => T | undefined;
-}
+};
 
 export interface TVSDataSource<T> {
   dataToRender$: Subject<T[]>;
@@ -55,7 +65,6 @@ export class CdkTableVirtualScrollDataSource<T> extends DataSource<T> implements
   }
 
   set data(data: T[] | TVSPaginationSettings<T>) {
-
     if (this._dataSubscription) {
       this._dataSubscription.unsubscribe();
       this._dataSubscription = undefined;
@@ -67,48 +76,59 @@ export class CdkTableVirtualScrollDataSource<T> extends DataSource<T> implements
         switchMap(collectionViewer => {
           let cache: Array<T> = [];
           let cachedPages = new Set<number>();
+          let maxPage = Number.MAX_VALUE;
           return collectionViewer.viewChange.pipe(
-
             switchMap(listRange => {
-              const startPage = listRange.start / pageSettings.pageSize;
-              const endPage = listRange.end / pageSettings.pageSize;
-              const obs: Observable<T[]>[] = [];
+              if (listRange.start === 0 && listRange.end === Number.MAX_VALUE) return of();
+              const startPage = Math.floor(listRange.start / pageSettings.pageSize);
+              const endPage = Math.ceil(listRange.end / pageSettings.pageSize) - 1;
 
-              // Get all the required page for the specified range
-              for (let page = startPage; page <= endPage; page++) {
-                if (cachedPages.has(page)) {
-                  obs.push(of(cache));
-                } else {
-                  const newData = pageSettings.endpoint({
-                    size: pageSettings.pageSize,
-                    page
-                  }).pipe(
-                    tap(tvsPage => {
-                      // Compute the total pages
-                      if (cache.length !== tvsPage.totalElements) {
-                        // If the total elements changes, we need to clear the cache
-                        cachedPages = new Set<number>();
-                        cache = pageSettings.emptyDataInitializer != null
-                                  ? Array.from(Array(tvsPage.totalElements), (_, idx) =>  pageSettings.emptyDataInitializer(idx, tvsPage.totalElements))
-                                  : Array(tvsPage.totalElements);
-                      }
+              const pages$ = generate(<GenerateBaseOptions<number>>{
+                initialState: startPage,
+                condition: x => x <= endPage && x <= maxPage,
+                iterate: x => x + 1,
+              });
 
-                      // Replace the cache content
-                      cache.splice(startPage * pageSettings.pageSize, tvsPage.content.length, ...tvsPage.content);
+              return pages$.pipe(
+                switchMap(page => {
+                  if (cachedPages.has(page)) {
+                    return of(cache);
+                  } else {
+                    return pageSettings
+                      .endpoint({
+                        size: pageSettings.pageSize,
+                        page,
+                      })
+                      .pipe(
+                        tap(tvsPage => {
+                          // Compute the total pages
+                          if (cache.length !== tvsPage.totalElements) {
+                            // If the total elements changes, we need to clear the cache
+                            cachedPages = new Set<number>();
+                            cache =
+                              pageSettings.emptyDataInitializer != null
+                                ? Array.from(Array(tvsPage.totalElements), (_, idx) =>
+                                    pageSettings.emptyDataInitializer(idx, tvsPage.totalElements)
+                                  )
+                                : Array(tvsPage.totalElements);
+                            maxPage = Math.max(Math.ceil(tvsPage.totalElements / pageSettings.pageSize) - 1, 0);
+                          }
+                          // Clone old cache to another array, this ensure that the data gets rendered on change
+                          cache = cache.slice();
 
-                      // Add the page to the cache
-                      cachedPages.add(page);
-                    }),
-                    map(() => cache)
-                  );
+                          // Replace the cache content
+                          cache.splice(startPage * pageSettings.pageSize, tvsPage.content.length, ...tvsPage.content);
 
-                  obs.push(newData)
-                }
-              }
-
-              return concat(...obs);
+                          // Add the page to the cache
+                          cachedPages.add(page);
+                        }),
+                        map(() => cache)
+                      );
+                  }
+                })
+              );
             })
-          )
+          );
         })
       );
 
@@ -122,7 +142,6 @@ export class CdkTableVirtualScrollDataSource<T> extends DataSource<T> implements
   public dataToRender$: Subject<T[]>;
   public dataOfRange$: Subject<T[]>;
   private streamsReady: boolean;
-
 
   constructor(initialData: T[] = []) {
     super();
@@ -140,11 +159,11 @@ export class CdkTableVirtualScrollDataSource<T> extends DataSource<T> implements
     this._renderChangesSubscription?.unsubscribe();
     this._renderChangesSubscription = new Subscription();
     this._renderChangesSubscription.add(
-      this._data.subscribe(data => this.dataToRender$.next(data))
+      this._data.subscribe(data => {
+        this.dataToRender$.next(data);
+      })
     );
-    this._renderChangesSubscription.add(
-      this.dataOfRange$.subscribe(data => this._renderData.next(data))
-    );
+    this._renderChangesSubscription.add(this.dataOfRange$.subscribe(data => this._renderData.next(data)));
   }
 
   connect(collectionViewer: CollectionViewer) {
@@ -156,7 +175,6 @@ export class CdkTableVirtualScrollDataSource<T> extends DataSource<T> implements
 
     return this._renderData;
   }
-
 
   disconnect() {
     this._renderChangesSubscription?.unsubscribe();
@@ -185,32 +203,21 @@ export class TableVirtualScrollDataSource<T> extends MatTableDataSource<T> imple
     const _filter: BehaviorSubject<string> = this['_filter'];
     const _renderData: BehaviorSubject<T[]> = this['_renderData'];
 
-    const sortChange: Observable<Sort | null | void> = _sort ?
-      merge(_sort.sortChange, _sort.initialized) as Observable<Sort | void> :
-      of(null);
-    const pageChange: Observable<PageEvent | null | void> = _paginator ?
-      merge(
-        _paginator.page,
-        _internalPageChanges,
-        _paginator.initialized
-      ) as Observable<PageEvent | void> :
-      of(null);
+    const sortChange: Observable<Sort | null | void> = _sort
+      ? (merge(_sort.sortChange, _sort.initialized) as Observable<Sort | void>)
+      : of(null);
+    const pageChange: Observable<PageEvent | null | void> = _paginator
+      ? (merge(_paginator.page, _internalPageChanges, _paginator.initialized) as Observable<PageEvent | void>)
+      : of(null);
     const dataStream: Observable<T[]> = this['_data'];
-    const filteredData = combineLatest([dataStream, _filter])
-      .pipe(map(([data]) => this._filterData(data)));
-    const orderedData = combineLatest([filteredData, sortChange])
-      .pipe(map(([data]) => this._orderData(data)));
-    const paginatedData = combineLatest([orderedData, pageChange])
-      .pipe(map(([data]) => this._pageData(data)));
+    const filteredData = combineLatest([dataStream, _filter]).pipe(map(([data]) => this._filterData(data)));
+    const orderedData = combineLatest([filteredData, sortChange]).pipe(map(([data]) => this._orderData(data)));
+    const paginatedData = combineLatest([orderedData, pageChange]).pipe(map(([data]) => this._pageData(data)));
 
     this._renderChangesSubscription?.unsubscribe();
     this._renderChangesSubscription = new Subscription();
-    this._renderChangesSubscription.add(
-      paginatedData.subscribe(data => this.dataToRender$.next(data))
-    );
-    this._renderChangesSubscription.add(
-      this.dataOfRange$.subscribe(data => _renderData.next(data))
-    );
+    this._renderChangesSubscription.add(paginatedData.subscribe(data => this.dataToRender$.next(data)));
+    this._renderChangesSubscription.add(this.dataOfRange$.subscribe(data => _renderData.next(data)));
   }
 
   private initStreams() {
