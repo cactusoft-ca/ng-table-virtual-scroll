@@ -8,7 +8,7 @@ import {
   Input,
   NgZone,
   OnChanges,
-  OnDestroy
+  OnDestroy,
 } from '@angular/core';
 import { MatTable } from '@angular/material/table';
 import { combineLatest, from, Subject } from 'rxjs';
@@ -21,7 +21,7 @@ export function _tableVirtualScrollDirectiveStrategyFactory(tableDir: TableItemS
 }
 
 function combineSelectors(...pairs: string[][]): string {
-  return pairs.map((selectors) => `${selectors.join(' ')}, ${selectors.join('')}`).join(', ');
+  return pairs.map(selectors => `${selectors.join(' ')}, ${selectors.join('')}`).join(', ');
 }
 
 const stickyHeaderSelector = combineSelectors(
@@ -50,16 +50,18 @@ const defaults = {
   headerEnabled: true,
   footerHeight: 48,
   footerEnabled: false,
-  bufferMultiplier: 0.7
+  bufferMultiplier: 0.7,
 };
 
 @Directive({
   selector: 'cdk-virtual-scroll-viewport[tvsItemSize]',
-  providers: [{
-    provide: VIRTUAL_SCROLL_STRATEGY,
-    useFactory: _tableVirtualScrollDirectiveStrategyFactory,
-    deps: [forwardRef(() => TableItemSizeDirective)]
-  }]
+  providers: [
+    {
+      provide: VIRTUAL_SCROLL_STRATEGY,
+      useFactory: _tableVirtualScrollDirectiveStrategyFactory,
+      deps: [forwardRef(() => TableItemSizeDirective)],
+    },
+  ],
 })
 export class TableItemSizeDirective<T = unknown> implements OnChanges, AfterContentInit, OnDestroy {
   private destroyed$ = new Subject<void>();
@@ -94,11 +96,10 @@ export class TableItemSizeDirective<T = unknown> implements OnChanges, AfterCont
   private resetStickyPositions = new Subject<void>();
   private stickyEnabled = {
     header: false,
-    footer: false
+    footer: false,
   };
 
-  constructor(private zone: NgZone) {
-  }
+  constructor(private zone: NgZone) {}
 
   ngOnDestroy() {
     this.destroyed$.next();
@@ -132,11 +133,9 @@ export class TableItemSizeDirective<T = unknown> implements OnChanges, AfterCont
         tap(() => {
           this.stickyPositions = null;
         })
-      )
+      ),
     ])
-      .pipe(
-        takeUntil(this.destroyed$)
-      )
+      .pipe(takeUntil(this.destroyed$))
       .subscribe(([stickyOffset]) => {
         if (!this.stickyPositions) {
           this.initStickyPositions();
@@ -153,31 +152,33 @@ export class TableItemSizeDirective<T = unknown> implements OnChanges, AfterCont
   connectDataSource(dataSource: unknown) {
     this.dataSourceChanges.next();
     if (!isTVSDataSource(dataSource)) {
-      throw new Error('[tvsItemSize] requires TableVirtualScrollDataSource or CdkTableVirtualScrollDataSource be set as [dataSource] of the table');
+      throw new Error(
+        '[tvsItemSize] requires TableVirtualScrollDataSource or CdkTableVirtualScrollDataSource be set as [dataSource] of the table'
+      );
     }
-    if (isMatTable(this.table) && !(dataSource instanceof TableVirtualScrollDataSource)) {
-      throw new Error('[tvsItemSize] requires TableVirtualScrollDataSource be set as [dataSource] of [mat-table]');
-    }
+
+    // TODO: Remove unnecessary comments
+    // Allow using CdkTableVirtualScrollDataSource directly
+    // if (isMatTable(this.table) && !(dataSource instanceof TableVirtualScrollDataSource)) {
+    //   throw new Error('[tvsItemSize] requires TableVirtualScrollDataSource be set as [dataSource] of [mat-table]');
+    // }
+
     if (isCdkTable(this.table) && !(dataSource instanceof CdkTableVirtualScrollDataSource)) {
       throw new Error('[tvsItemSize] requires CdkTableVirtualScrollDataSource be set as [dataSource] of [cdk-table]');
     }
 
-    dataSource
-      .dataToRender$
+    dataSource.dataToRender$
       .pipe(
         distinctUntilChanged(),
         takeUntil(this.dataSourceChanges),
         takeUntil(this.destroyed$),
-        tap(data => this.scrollStrategy.dataLength = data.length),
+        tap(data => (this.scrollStrategy.dataLength = data.length)),
         switchMap(data =>
-          this.scrollStrategy
-            .renderedRangeStream
-            .pipe(
-              map(({
-                     start,
-                     end
-                   }) => typeof start !== 'number' || typeof end !== 'number' ? data : data.slice(start, end))
+          this.scrollStrategy.renderedRangeStream.pipe(
+            map(({ start, end }) =>
+              typeof start !== 'number' || typeof end !== 'number' ? data : data.slice(start, end)
             )
+          )
         )
       )
       .subscribe(data => {
@@ -192,7 +193,7 @@ export class TableItemSizeDirective<T = unknown> implements OnChanges, AfterCont
       rowHeight: +this.rowHeight || defaults.rowHeight,
       headerHeight: this.headerEnabled ? +this.headerHeight || defaults.headerHeight : 0,
       footerHeight: this.footerEnabled ? +this.footerHeight || defaults.footerHeight : 0,
-      bufferMultiplier: +this.bufferMultiplier || defaults.bufferMultiplier
+      bufferMultiplier: +this.bufferMultiplier || defaults.bufferMultiplier,
     };
     this.scrollStrategy.setConfig(config);
   }
@@ -201,14 +202,13 @@ export class TableItemSizeDirective<T = unknown> implements OnChanges, AfterCont
     if (!this.scrollStrategy.viewport) {
       this.stickyEnabled = {
         header: false,
-        footer: false
+        footer: false,
       };
       return;
     }
 
-    const isEnabled = (rowDefs: CanStick[]) => rowDefs
-      .map(def => def.sticky)
-      .reduce((prevState, state) => prevState && state, true);
+    const isEnabled = (rowDefs: CanStick[]) =>
+      rowDefs.map(def => def.sticky).reduce((prevState, state) => prevState && state, true);
 
     this.stickyEnabled = {
       header: isEnabled(this.table['_headerRowDefs']),
@@ -217,7 +217,8 @@ export class TableItemSizeDirective<T = unknown> implements OnChanges, AfterCont
   }
 
   private setStickyHeader(offset: number) {
-    this.scrollStrategy.viewport.elementRef.nativeElement.querySelectorAll(stickyHeaderSelector)
+    this.scrollStrategy.viewport.elementRef.nativeElement
+      .querySelectorAll(stickyHeaderSelector)
       .forEach((el: HTMLElement) => {
         const parent = el.parentElement;
         let baseOffset = 0;
@@ -229,7 +230,8 @@ export class TableItemSizeDirective<T = unknown> implements OnChanges, AfterCont
   }
 
   private setStickyFooter(offset: number) {
-    this.scrollStrategy.viewport.elementRef.nativeElement.querySelectorAll(stickyFooterSelector)
+    this.scrollStrategy.viewport.elementRef.nativeElement
+      .querySelectorAll(stickyFooterSelector)
       .forEach((el: HTMLElement) => {
         const parent = el.parentElement;
         let baseOffset = 0;
@@ -246,32 +248,27 @@ export class TableItemSizeDirective<T = unknown> implements OnChanges, AfterCont
     this.setStickyEnabled();
 
     if (this.stickyEnabled.header) {
-      this.scrollStrategy.viewport.elementRef.nativeElement.querySelectorAll(stickyHeaderSelector)
-        .forEach(el => {
-          const parent = el.parentElement;
-          if (!this.stickyPositions.has(parent)) {
-            this.stickyPositions.set(parent, parent.offsetTop);
-          }
-        });
+      this.scrollStrategy.viewport.elementRef.nativeElement.querySelectorAll(stickyHeaderSelector).forEach(el => {
+        const parent = el.parentElement;
+        if (!this.stickyPositions.has(parent)) {
+          this.stickyPositions.set(parent, parent.offsetTop);
+        }
+      });
     }
 
     if (this.stickyEnabled.footer) {
-      this.scrollStrategy.viewport.elementRef.nativeElement.querySelectorAll(stickyFooterSelector)
-        .forEach(el => {
-          const parent = el.parentElement;
-          if (!this.stickyPositions.has(parent)) {
-            this.stickyPositions.set(parent, -parent.offsetTop);
-          }
-        });
+      this.scrollStrategy.viewport.elementRef.nativeElement.querySelectorAll(stickyFooterSelector).forEach(el => {
+        const parent = el.parentElement;
+        if (!this.stickyPositions.has(parent)) {
+          this.stickyPositions.set(parent, -parent.offsetTop);
+        }
+      });
     }
   }
-
 
   private getScheduleObservable() {
     // Use onStable when in the context of an ongoing change detection cycle so that we
     // do not accidentally trigger additional cycles.
-    return this.zone.isStable
-      ? from(Promise.resolve(undefined))
-      : this.zone.onStable.pipe(take(1));
+    return this.zone.isStable ? from(Promise.resolve(undefined)) : this.zone.onStable.pipe(take(1));
   }
 }

@@ -1,0 +1,4 @@
+# These files are modified by tooling (e.g. nx, ng, nswag, etc), and prettier competes with their default formatting.
+# This lets tooling dictating formatting. 
+**/angular.json
+**/generated/**
