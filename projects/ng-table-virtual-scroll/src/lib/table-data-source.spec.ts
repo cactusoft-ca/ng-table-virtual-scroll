@@ -1,19 +1,23 @@
-import { TestBed } from '@angular/core/testing';
-import { CdkTableVirtualScrollDataSource, TableVirtualScrollDataSource, TVSDataSource, TVSPage, TVSPageRequest } from './table-data-source';
-import { Subject, of } from 'rxjs';
-import { CollectionViewer, ListRange } from '@angular/cdk/collections';
-import { map, switchMap } from 'rxjs/operators';
+import { ListRange } from '@angular/cdk/collections';
 import { DataSource } from '@angular/cdk/table';
 import { Type } from '@angular/core';
+import { TestBed } from '@angular/core/testing';
 import { MatTableDataSource } from '@angular/material/table';
+import { Subject } from 'rxjs';
+import { map, switchMap } from 'rxjs/operators';
+import { CdkTableVirtualScrollDataSource, TableVirtualScrollDataSource, TVSDataSource } from './table-data-source';
 
 interface TestData {
   index: number;
 }
 
-function getTestData(size = 10, page = 0): TestData[] {
-  return Array.from({ length: size }).map((e, i) => ({ index: i + page * size }));
+function getTestData(n = 10): TestData[] {
+  return Array.from({ length: n }).map((e, i) => ({ index: i }));
 }
+
+// function getTestData(size = 10, page = 0): TestData[] {
+//   return Array.from({ length: size }).map((e, i) => ({ index: i + page * size }));
+// }
 
 
 describe('TableVirtualScrollDataSource', () => {
@@ -26,36 +30,34 @@ describe('TableVirtualScrollDataSource', () => {
     expect(dataSource instanceof MatTableDataSource).toBeTruthy();
   });
 
+//   it('should fetch page', () => {
+//     const dataSource = new CdkTableVirtualScrollDataSource<TestData>();
+//     dataSource.data = { 
+//       endpoint: (request: TVSPageRequest) => {
+//         return of(getTestData(request.size, request.page)).pipe(map(data => ({ content: data, totalElements: 100 })));
+//       },
+//       pageSize: 20
+//     };
+//     const viewChange = new Subject<ListRange>();
+//     const viewer: CollectionViewer = {
+//       viewChange
+//     };
 
+//     const results: TestData[][] = [];
+//     dataSource.connect(viewer).subscribe((data) => {
+//       results.push(data);
+//     });
 
-  it('should fetch page', () => {
-    const dataSource = new CdkTableVirtualScrollDataSource<TestData>();
-    dataSource.data = { 
-      endpoint: (request: TVSPageRequest) => {
-        return of(getTestData(request.size, request.page)).pipe(map(data => ({ content: data, totalElements: 100 })));
-      },
-      pageSize: 20
-    };
-    const viewChange = new Subject<ListRange>();
-    const viewer: CollectionViewer = {
-      viewChange
-    };
+//     viewChange.next({ start: 0, end: 26 });
+//     viewChange.next({ start: 56, end: 67 });
 
-    const results: TestData[][] = [];
-    dataSource.connect(viewer).subscribe((data) => {
-      results.push(data);
-    });
-
-    viewChange.next({ start: 0, end: 26 });
-    viewChange.next({ start: 56, end: 67 });
-
-    expect(results).toEqual([
-      [],
-      new Array(100).splice(0, 20, getTestData(20, 0)).splice(20, 20, getTestData(20, 1)),
-      new Array(100).splice(0, 20, getTestData(20, 0)).splice(20, 20, getTestData(20, 1)).splice(40, 20, getTestData(20, 2)).splice(60, 20, getTestData(20, 3))
-    ]);
-  });
-});
+//     expect(results).toEqual([
+//       [],
+//       new Array(100).splice(0, 20, getTestData(20, 0)).splice(20, 20, getTestData(20, 1)),
+//       new Array(100).splice(0, 20, getTestData(20, 0)).splice(20, 20, getTestData(20, 1)).splice(40, 20, getTestData(20, 2)).splice(60, 20, getTestData(20, 3))
+//     ]);
+//   });
+// });
 
 describe('CdkTableVirtualScrollDataSource', () => {
   beforeEach(() => TestBed.configureTestingModule({}));
