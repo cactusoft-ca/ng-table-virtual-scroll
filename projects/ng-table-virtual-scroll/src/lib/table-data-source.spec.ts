@@ -15,6 +15,7 @@ function getTestData(n = 10): TestData[] {
   return Array.from({ length: n }).map((e, i) => ({ index: i }));
 }
 
+// TODO: Remove unnecessary comments
 // function getTestData(size = 10, page = 0): TestData[] {
 //   return Array.from({ length: size }).map((e, i) => ({ index: i + page * size }));
 // }

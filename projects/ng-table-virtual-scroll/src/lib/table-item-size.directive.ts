@@ -157,6 +157,7 @@ export class TableItemSizeDirective<T = unknown> implements OnChanges, AfterCont
       );
     }
 
+    // TODO: Remove unnecessary comments
     // Allow using CdkTableVirtualScrollDataSource directly
     // if (isMatTable(this.table) && !(dataSource instanceof TableVirtualScrollDataSource)) {
     //   throw new Error('[tvsItemSize] requires TableVirtualScrollDataSource be set as [dataSource] of [mat-table]');
