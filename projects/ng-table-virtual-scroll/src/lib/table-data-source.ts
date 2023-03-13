@@ -14,12 +14,8 @@ import {
   Subscription,
 } from 'rxjs';
 import { GenerateBaseOptions } from 'rxjs/internal/observable/generate';
-import { concatMap, distinctUntilChanged, filter, map, switchMap, tap } from 'rxjs/operators';
+import { map, switchMap, tap } from 'rxjs/operators';
 
-/**
- * @page The page of the request to get. The table data source uses a zero based index implying that the first page is 0
- * @size The number of items to fetch
- */
 export interface TVSPageRequest {
   page: number;
   size: number;
@@ -82,21 +78,19 @@ export class CdkTableVirtualScrollDataSource<T> extends DataSource<T> implements
           let cachedPages = new Set<number>();
           let maxPage = Number.MAX_VALUE;
           return collectionViewer.viewChange.pipe(
-            filter(listRange => !(listRange.start === 0 && listRange.end === Number.MAX_VALUE)),
-            map(listRange => ({
-              startPage: Math.floor(listRange.start / pageSettings.pageSize),
-              endPage: Math.ceil(listRange.end / pageSettings.pageSize) - 1,
-            })),
-            distinctUntilChanged((x, y) => x.startPage === y.startPage && x.endPage === y.endPage),
-            switchMap(paging => {
+            switchMap(listRange => {
+              if (listRange.start === 0 && listRange.end === Number.MAX_VALUE) return of();
+              const startPage = Math.floor(listRange.start / pageSettings.pageSize);
+              const endPage = Math.ceil(listRange.end / pageSettings.pageSize) - 1;
+
               const pages$ = generate(<GenerateBaseOptions<number>>{
-                initialState: paging.startPage,
-                condition: x => x <= paging.endPage && x <= maxPage,
+                initialState: startPage,
+                condition: x => x <= endPage && x <= maxPage,
                 iterate: x => x + 1,
               });
 
               return pages$.pipe(
-                concatMap(page => {
+                switchMap(page => {
                   if (cachedPages.has(page)) {
                     return of(cache);
                   } else {
@@ -123,7 +117,7 @@ export class CdkTableVirtualScrollDataSource<T> extends DataSource<T> implements
                           cache = cache.slice();
 
                           // Replace the cache content
-                          cache.splice(page * pageSettings.pageSize, tvsPage.content.length, ...tvsPage.content);
+                          cache.splice(startPage * pageSettings.pageSize, tvsPage.content.length, ...tvsPage.content);
 
                           // Add the page to the cache
                           cachedPages.add(page);
