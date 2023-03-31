@@ -96,7 +96,7 @@ export class CdkTableVirtualScrollDataSource<T> extends DataSource<T> implements
               });
 
               return pages$.pipe(
-                concatMap(page => {
+                mergeMap(page => {
                   if (cachedPages.has(page)) {
                     return of(cache);
                   } else {
