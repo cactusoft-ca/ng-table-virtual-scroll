@@ -14,7 +14,7 @@ import {
   Subscription,
 } from 'rxjs';
 import { GenerateBaseOptions } from 'rxjs/internal/observable/generate';
-import { concatMap, distinctUntilChanged, filter, map, switchMap, tap } from 'rxjs/operators';
+import { distinctUntilChanged, filter, map, mergeMap, switchMap, tap } from 'rxjs/operators';
 
 /**
  * @page The page of the request to get. The table data source uses a zero based index implying that the first page is 0
