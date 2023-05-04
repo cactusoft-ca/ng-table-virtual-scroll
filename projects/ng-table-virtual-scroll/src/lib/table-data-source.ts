@@ -14,7 +14,7 @@ import {
   Subscription,
 } from 'rxjs';
 import { GenerateBaseOptions } from 'rxjs/internal/observable/generate';
-import { distinctUntilChanged, filter, map, mergeMap, switchMap, tap } from 'rxjs/operators';
+import { debounceTime, distinctUntilChanged, filter, map, mergeMap, switchMap, tap } from 'rxjs/operators';
 
 /**
  * @page The page of the request to get. The table data source uses a zero based index implying that the first page is 0
@@ -88,6 +88,7 @@ export class CdkTableVirtualScrollDataSource<T> extends DataSource<T> implements
               endPage: Math.ceil(listRange.end / pageSettings.pageSize) - 1,
             })),
             distinctUntilChanged((x, y) => x.startPage === y.startPage && x.endPage === y.endPage),
+            debounceTime(50),
             switchMap(paging => {
               const pages$ = generate(<GenerateBaseOptions<number>>{
                 initialState: paging.startPage,
@@ -97,40 +98,36 @@ export class CdkTableVirtualScrollDataSource<T> extends DataSource<T> implements
 
               return pages$.pipe(
                 mergeMap(page => {
-                  if (cachedPages.has(page)) {
-                    return of(cache);
-                  } else {
-                    return pageSettings
-                      .endpoint({
-                        size: pageSettings.pageSize,
-                        page,
-                      })
-                      .pipe(
-                        tap(tvsPage => {
-                          // Compute the total pages
-                          if (cache.length !== tvsPage.totalElements) {
-                            // If the total elements changes, we need to clear the cache
-                            cachedPages = new Set<number>();
-                            cache =
-                              pageSettings.emptyDataInitializer != null
-                                ? Array.from(Array(tvsPage.totalElements), (_, idx) =>
-                                    pageSettings.emptyDataInitializer(idx, tvsPage.totalElements)
-                                  )
-                                : Array(tvsPage.totalElements);
-                            maxPage = Math.max(Math.ceil(tvsPage.totalElements / pageSettings.pageSize) - 1, 0);
-                          }
-                          // Clone old cache to another array, this ensure that the data gets rendered on change
-                          cache = cache.slice();
+                  return pageSettings
+                    .endpoint({
+                      size: pageSettings.pageSize,
+                      page,
+                    })
+                    .pipe(
+                      tap(tvsPage => {
+                        // Compute the total pages
+                        if (cache.length !== tvsPage.totalElements) {
+                          // If the total elements changes, we need to clear the cache
+                          cachedPages = new Set<number>();
+                          cache =
+                            pageSettings.emptyDataInitializer != null
+                              ? Array.from(Array(tvsPage.totalElements), (_, idx) =>
+                                  pageSettings.emptyDataInitializer(idx, tvsPage.totalElements)
+                                )
+                              : Array(tvsPage.totalElements);
+                          maxPage = Math.max(Math.ceil(tvsPage.totalElements / pageSettings.pageSize) - 1, 0);
+                        }
+                        // Clone old cache to another array, this ensure that the data gets rendered on change
+                        cache = cache.slice();
 
-                          // Replace the cache content
-                          cache.splice(page * pageSettings.pageSize, tvsPage.content.length, ...tvsPage.content);
+                        // Replace the cache content
+                        cache.splice(page * pageSettings.pageSize, tvsPage.content.length, ...tvsPage.content);
 
-                          // Add the page to the cache
-                          cachedPages.add(page);
-                        }),
-                        map(() => cache)
-                      );
-                  }
+                        // Add the page to the cache
+                        cachedPages.add(page);
+                      }),
+                      map(() => cache)
+                    );
                 })
               );
             })
