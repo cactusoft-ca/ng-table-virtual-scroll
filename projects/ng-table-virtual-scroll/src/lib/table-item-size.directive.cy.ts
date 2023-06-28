@@ -3,7 +3,7 @@ import { CdkVirtualScrollViewport, ScrollingModule } from '@angular/cdk/scrollin
 import { CdkTableModule } from '@angular/cdk/table';
 import { Component, Type, ViewChild, ViewEncapsulation } from '@angular/core';
 import { MatLegacyTableModule } from '@angular/material/legacy-table';
-import { MatTableModule } from '@angular/material/table';
+import { MatLegacyTableModule as MatTableModule } from '@angular/material/legacy-table';
 import { mount } from 'cypress/angular';
 import { CdkTableVirtualScrollDataSource, TableVirtualScrollDataSource } from './table-data-source';
 import { TableItemSizeDirective } from './table-item-size.directive';

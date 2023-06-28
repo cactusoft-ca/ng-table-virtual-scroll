@@ -10,7 +10,7 @@ import {
   OnChanges,
   OnDestroy,
 } from '@angular/core';
-import { MatTable } from '@angular/material/table';
+import { MatLegacyTable as MatTable } from '@angular/material/legacy-table';
 import { combineLatest, from, Subject } from 'rxjs';
 import { delayWhen, distinctUntilChanged, map, startWith, switchMap, take, takeUntil, tap } from 'rxjs/operators';
 import { FixedSizeTableVirtualScrollStrategy } from './fixed-size-table-virtual-scroll-strategy';
