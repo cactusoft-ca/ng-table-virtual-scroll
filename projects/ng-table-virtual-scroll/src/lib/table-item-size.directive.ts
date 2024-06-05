@@ -4,17 +4,17 @@ import {
   AfterContentInit,
   ContentChild,
   Directive,
-  forwardRef,
   Input,
   NgZone,
   OnChanges,
   OnDestroy,
+  forwardRef,
 } from '@angular/core';
-import { MatLegacyTable as MatTable } from '@angular/material/legacy-table';
-import { combineLatest, from, Subject } from 'rxjs';
+import { MatTable } from '@angular/material/table';
+import { Subject, combineLatest, from } from 'rxjs';
 import { delayWhen, distinctUntilChanged, map, startWith, switchMap, take, takeUntil, tap } from 'rxjs/operators';
 import { FixedSizeTableVirtualScrollStrategy } from './fixed-size-table-virtual-scroll-strategy';
-import { CdkTableVirtualScrollDataSource, isTVSDataSource, TableVirtualScrollDataSource } from './table-data-source';
+import { CdkTableVirtualScrollDataSource, isTVSDataSource } from './table-data-source';
 
 export function _tableVirtualScrollDirectiveStrategyFactory(tableDir: TableItemSizeDirective) {
   return tableDir.scrollStrategy;
