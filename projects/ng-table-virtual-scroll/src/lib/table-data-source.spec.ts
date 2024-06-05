@@ -2,7 +2,7 @@ import { ListRange } from '@angular/cdk/collections';
 import { DataSource } from '@angular/cdk/table';
 import { Type } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
-import { MatLegacyTableDataSource as MatTableDataSource } from '@angular/material/legacy-table';
+import { MatTableDataSource } from '@angular/material/table';
 import { Subject } from 'rxjs';
 import { map, switchMap } from 'rxjs/operators';
 import { CdkTableVirtualScrollDataSource, TableVirtualScrollDataSource, TVSDataSource } from './table-data-source';

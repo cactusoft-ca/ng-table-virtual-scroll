@@ -1,10 +1,10 @@
 @use '@angular/material' as mat;
 @use 'helpers';
 
-@include mat.all-legacy-component-typographies();
-@include mat.legacy-core();
+@include mat.all-component-typographies();
+@include mat.core();
 
-@include mat.all-legacy-component-themes(helpers.$mat-app-theme);
+@include mat.all-component-themes(helpers.$mat-app-theme);
 
 @import 'highlight';
 

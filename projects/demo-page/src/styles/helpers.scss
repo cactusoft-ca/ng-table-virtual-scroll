@@ -8,7 +8,7 @@ $mat-app-theme: mat.define-light-theme((
     primary: $mat-app-primary,
     accent: $mat-app-accent,
   ),
-  typography: mat.define-legacy-typography-config(),
+  typography: mat.define-typography-config(),
   density: 0,
 ));
 
